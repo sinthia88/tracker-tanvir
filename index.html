@@ -18,12 +18,47 @@
 <body class="bg-gray-100 text-gray-800">
 
     <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
-        <header class="text-center mb-8">
+        <header class="text-center mb-8 relative">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Study Time Tracker</h1>
             <p class="text-gray-600 mt-2">Manually log study sessions and breaks with proof.</p>
+
+            <!-- Auth Container -->
+            <div id="auth-container" class="absolute top-0 right-0">
+                <div id="user-info" class="hidden items-center gap-3">
+                    <p id="user-email" class="text-sm text-gray-600 font-medium hidden sm:block"></p>
+                    <button id="signOutBtn"
+                        class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors">Sign
+                        Out</button>
+                </div>
+            </div>
         </header>
 
-        <main>
+        <!-- Login Prompt -->
+        <div id="login-prompt" class="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md mx-auto my-12">
+            <h2 class="text-2xl font-bold mb-4">Welcome!</h2>
+            <p class="text-gray-600 mb-6">Please sign in with your Google account to track and save your study sessions.
+            </p>
+            <button id="signInBtn"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md inline-flex items-center gap-2 transition-transform transform hover:scale-105">
+                <svg class="w-5 h-5" viewBox="0 0 48 48" fill="currentColor">
+                    <path fill="#FFC107"
+                        d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.804 12.31C34.551 8.273 29.697 6 24 6C12.955 6 4 14.955 4 26s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z">
+                    </path>
+                    <path fill="#FF3D00"
+                        d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.843-5.73C34.551 8.273 29.697 6 24 6C16.312 6 9.782 10.377 6.306 14.691z">
+                    </path>
+                    <path fill="#4CAF50"
+                        d="M24 46c5.697 0 10.551-2.273 14.804-6.31l-5.843-5.73C30.842 37.846 27.059 40 24 40c-5.039 0-9.345-3.108-11.124-7.488l-6.571 4.819C9.782 41.623 16.312 46 24 46z">
+                    </path>
+                    <path fill="#1976D2"
+                        d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l5.843 5.73C42.958 35.171 46 30.091 46 24c0-1.341-.138-2.65-.389-3.917z">
+                    </path>
+                </svg>
+                Sign In with Google
+            </button>
+        </div>
+
+        <main class="hidden">
             <!-- Log Session Form -->
             <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
                 <h2 class="text-2xl font-bold mb-4 border-b pb-2">Log a New Study Session</h2>

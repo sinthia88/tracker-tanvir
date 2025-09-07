@@ -1,6 +1,6 @@
 // --- Firebase Imports ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- Firebase Configuration ---
@@ -16,8 +16,15 @@ const db = getFirestore(app);
 
 let userId = null;
 let allLogs = [];
+let logsUnsubscribe = null; // To detach listener on sign-out
 
 // --- DOM Elements ---
+const mainContent = document.querySelector('main');
+const loginPrompt = document.getElementById('login-prompt');
+const signInBtn = document.getElementById('signInBtn');
+const signOutBtn = document.getElementById('signOutBtn');
+const userInfo = document.getElementById('user-info');
+const userEmailEl = document.getElementById('user-email');
 const logSessionForm = document.getElementById('logSessionForm');
 const breaksContainer = document.getElementById('breaksContainer');
 const addBreakBtn = document.getElementById('addBreakBtn');
@@ -169,9 +176,12 @@ function renderLogs(logs) {
 
 function subscribeToLogs() {
      if (!userId) return;
+     // Detach any existing listener before creating a new one
+     if (logsUnsubscribe) logsUnsubscribe();
+
      const collectionPath = `artifacts/${appId}/users/${userId}/study_sessions`;
      const q = query(collection(db, collectionPath));
-     onSnapshot(q, (querySnapshot) => {
+     logsUnsubscribe = onSnapshot(q, (querySnapshot) => {
          const logs = [];
          querySnapshot.forEach((doc) => {
              logs.push({ id: doc.id, ...doc.data() });
@@ -182,6 +192,17 @@ function subscribeToLogs() {
         console.error("Error getting logs: ", error);
         loadingEl.innerText = "Error loading logs.";
      });
+}
+
+function clearLogs() {
+    if (logsUnsubscribe) {
+        logsUnsubscribe();
+        logsUnsubscribe = null;
+    }
+    allLogs = [];
+    logsContainer.innerHTML = '';
+    noLogsEl.classList.remove('hidden');
+    loadingEl.style.display = 'none';
 }
 
 // --- Report Generation and Download ---
@@ -285,6 +306,28 @@ function generatePDF(logs, period, filename) {
     doc.save(filename);
 }
 
+// --- Authentication ---
+const provider = new GoogleAuthProvider();
+
+async function signInWithGoogle() {
+    try {
+        await signInWithPopup(auth, provider);
+    } catch (error) {
+        console.error("Google Sign-In failed:", error);
+        showAlert("Could not sign in with Google. Please try again.", "Sign-In Error");
+    }
+}
+
+async function signOutUser() {
+    try {
+        await signOut(auth);
+    } catch (error) {
+        console.error("Sign-out failed:", error);
+        showAlert("An error occurred while signing out.", "Sign-Out Error");
+    }
+}
+
+
 // --- Event Listeners ---
 addBreakBtn.addEventListener('click', addBreakField);
 
@@ -350,7 +393,7 @@ logSessionForm.addEventListener('submit', async (e) => {
         });
 
         const totalSessionDuration = (sessionEnd - sessionStart) / 1000;
-        const totalBreakDuration = breaksData.reduce((acc, b) => acc + (b.breakEnd - b.start) / 1000, 0);
+        const totalBreakDuration = breaksData.reduce((acc, b) => acc + (b.breakEnd - b.breakStart) / 1000, 0);
         const totalStudyDuration = totalSessionDuration - totalBreakDuration;
 
         if (totalStudyDuration < 0) {
@@ -433,25 +476,39 @@ downloadMonthlyBtn.addEventListener('click', () => {
 });
 
 // --- App Initialization ---
-async function main() {
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            userId = user.uid;
-            subscribeToLogs();
-        } else {
-            userId = null;
-        }
-    });
-    try {
-        if (initialAuthToken) {
-            await signInWithCustomToken(auth, initialAuthToken);
-        } else {
-            await signInAnonymously(auth);
-        }
-    } catch (error) {
-        console.error("Authentication failed:", error);
-        loadingEl.innerText = "Authentication failed. Cannot load data.";
+function handleAuthState(user) {
+    if (user) {
+        // User is signed in
+        userId = user.uid;
+        mainContent.classList.remove('hidden');
+        loginPrompt.classList.add('hidden');
+        userInfo.classList.remove('hidden');
+        userEmailEl.textContent = user.email;
+
+        // Ensure sign-in button listener is removed and sign-out is added
+        signInBtn.removeEventListener('click', signInWithGoogle);
+        signOutBtn.addEventListener('click', signOutUser);
+        
+        subscribeToLogs();
+
+    } else {
+        // User is signed out
+        userId = null;
+        mainContent.classList.add('hidden');
+        loginPrompt.classList.remove('hidden');
+        userInfo.classList.add('hidden');
+        userEmailEl.textContent = '';
+        
+        // Ensure sign-out button listener is removed and sign-in is added
+        signOutBtn.removeEventListener('click', signOutUser);
+        signInBtn.addEventListener('click', signInWithGoogle);
+        
+        clearLogs();
     }
+}
+
+function main() {
+    onAuthStateChanged(auth, handleAuthState);
 }
 
 main();
