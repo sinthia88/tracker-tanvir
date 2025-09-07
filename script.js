@@ -1,18 +1,28 @@
-// --- Firebase Imports ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+    apiKey: "AIzaSyBYDJB40x6OYSqffeo23xMmqSFesfkQO6w",
+    authDomain: "tracker-bf9d0.firebaseapp.com",
+    projectId: "tracker-bf9d0",
+    storageBucket: "tracker-bf9d0.firebasestorage.app",
+    messagingSenderId: "651106908836",
+    appId: "1:651106908836:web:315ff2d280d5452778c431",
+    measurementId: "G-YYQ2L16DX5"
+  };
 
-// --- Firebase Configuration ---
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-study-tracker';
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIza...", authDomain: "...", projectId: "..." };
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-// --- Firebase Initialization ---
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-// setLogLevel('debug');
+try {
+    // Check for placeholder or missing API key which indicates a configuration issue.
+    if (!firebaseConfig || firebaseConfig.apiKey.startsWith("AIza")) {
+        throw new Error("Firebase configuration is missing or invalid. Please ensure the app is set up correctly in the hosting environment.");
+    }
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    isFirebaseInitialized = true;
+    // setLogLevel('debug'); // Uncomment for detailed logs
+} catch (error) {
+    console.error("Firebase Initialization Error:", error.message);
+    // The error will be displayed to the user in the `main` function.
+}
 
 let userId = null;
 let allLogs = [];
@@ -176,7 +186,6 @@ function renderLogs(logs) {
 
 function subscribeToLogs() {
      if (!userId) return;
-     // Detach any existing listener before creating a new one
      if (logsUnsubscribe) logsUnsubscribe();
 
      const collectionPath = `artifacts/${appId}/users/${userId}/study_sessions`;
@@ -239,20 +248,17 @@ function generatePDF(logs, period, filename) {
     const totalBreakSeconds = logs.reduce((acc, log) => acc + log.totalBreakDurationSeconds, 0);
     const sortedLogs = [...logs].sort((a, b) => a.sessionStartTime.toMillis() - b.sessionStartTime.toMillis());
 
-    // --- PDF Header ---
     doc.setFontSize(20);
     doc.text("Study Session Report", 105, 20, null, null, "center");
     doc.setFontSize(12);
     doc.text(`Period: ${period}`, 105, 28, null, null, "center");
 
-    // --- Summary ---
     doc.setFontSize(14);
     doc.text("Summary", 14, 45);
     doc.setFontSize(10);
     doc.text(`Total Study Time: ${formatTime(totalStudySeconds)}`, 14, 52);
     doc.text(`Total Break Time: ${formatTime(totalBreakSeconds)}`, 14, 58);
 
-    // --- Session Details Table ---
     const sessionHead = [['Session Start', 'Session End', 'Study Time', 'Break Time', '# Breaks']];
     const sessionBody = sortedLogs.map(log => [
         log.sessionStartTime.toDate().toLocaleString(),
@@ -266,14 +272,13 @@ function generatePDF(logs, period, filename) {
         head: sessionHead,
         body: sessionBody,
         startY: 65,
-        headStyles: { fillColor: [74, 85, 104] }, // slate-700
+        headStyles: { fillColor: [74, 85, 104] },
         didDrawPage: function(data) {
             doc.setFontSize(16);
             doc.text("Session Details", 14, data.cursor.y - 10);
         }
     });
 
-    // --- Break Details Table ---
     const breakHead = [['Session Start', 'Break Start', 'Break End', 'Duration', 'Reason']];
     const breakBody = [];
     sortedLogs.forEach(log => {
@@ -307,14 +312,29 @@ function generatePDF(logs, period, filename) {
 }
 
 // --- Authentication ---
+// NOTE: For Google Sign-In to work, you MUST enable it as a provider
+// in your Firebase project's Authentication settings and add the
+// domain of this app to the list of authorized domains.
 const provider = new GoogleAuthProvider();
 
 async function signInWithGoogle() {
+    if (!isFirebaseInitialized) {
+        showAlert("The application is not configured correctly. Cannot sign in.", "Configuration Error");
+        return;
+    }
     try {
         await signInWithPopup(auth, provider);
     } catch (error) {
         console.error("Google Sign-In failed:", error);
-        showAlert("Could not sign in with Google. Please try again.", "Sign-In Error");
+        let errorMessage = "Could not sign in with Google. Please try again.";
+        if (error.code === 'auth/popup-blocked') {
+            errorMessage = "Sign-in popup was blocked by the browser. Please allow popups for this site and try again.";
+        } else if (error.code === 'auth/operation-not-allowed') {
+             errorMessage = "Google Sign-In is not enabled for this project. Please enable it in your Firebase console's Authentication settings.";
+        } else if (error.code === 'auth/popup-closed-by-user') {
+            errorMessage = "The sign-in window was closed before completing. Please try again."
+        }
+        showAlert(errorMessage, "Sign-In Error");
     }
 }
 
@@ -484,13 +504,9 @@ function handleAuthState(user) {
         loginPrompt.classList.add('hidden');
         userInfo.classList.remove('hidden');
         userEmailEl.textContent = user.email;
-
-        // Ensure sign-in button listener is removed and sign-out is added
         signInBtn.removeEventListener('click', signInWithGoogle);
         signOutBtn.addEventListener('click', signOutUser);
-        
         subscribeToLogs();
-
     } else {
         // User is signed out
         userId = null;
@@ -498,16 +514,24 @@ function handleAuthState(user) {
         loginPrompt.classList.remove('hidden');
         userInfo.classList.add('hidden');
         userEmailEl.textContent = '';
-        
-        // Ensure sign-out button listener is removed and sign-in is added
         signOutBtn.removeEventListener('click', signOutUser);
         signInBtn.addEventListener('click', signInWithGoogle);
-        
         clearLogs();
     }
 }
 
 function main() {
+    if (!isFirebaseInitialized) {
+        // Show a clear error message if Firebase failed to initialize
+        showAlert("Firebase configuration is missing or invalid. The application cannot start.", "Fatal Error");
+        const loginPromptContent = loginPrompt.querySelector('div');
+        if(loginPromptContent) {
+             loginPromptContent.innerHTML = '<p class="text-red-500 text-center font-bold">Application is not configured correctly. Please contact support.</p>';
+        }
+        loginPrompt.classList.remove('hidden');
+        mainContent.classList.add('hidden');
+        return;
+    }
     onAuthStateChanged(auth, handleAuthState);
 }
 
