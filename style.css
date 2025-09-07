@@ -1,0 +1,44 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Custom scrollbar for better aesthetics */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Simple fade-in animation for the modal */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-fade {
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* Add a bit more spacing to datetime-local inputs */
+input[type="datetime-local"] {
+    letter-spacing: 0.5px;
+}
+

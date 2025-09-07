@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Time Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Study Time Tracker</h1>
+            <p class="text-gray-600 mt-2">Manually log study sessions and breaks with proof.</p>
+        </header>
+
+        <main>
+            <!-- Log Session Form -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+                <h2 class="text-2xl font-bold mb-4 border-b pb-2">Log a New Study Session</h2>
+                <form id="logSessionForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="sessionStart" class="block text-gray-700 font-medium mb-2">Study Start
+                                Time:</label>
+                            <input type="datetime-local" id="sessionStart" name="sessionStart"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                required>
+                        </div>
+                        <div>
+                            <label for="sessionEnd" class="block text-gray-700 font-medium mb-2">Study End Time:</label>
+                            <input type="datetime-local" id="sessionEnd" name="sessionEnd"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                required>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mb-4">Breaks Taken</h3>
+                    <div id="breaksContainer" class="space-y-6 mb-6">
+                        <!-- Break fields will be added here dynamically -->
+                    </div>
+
+                    <div class="flex justify-between items-center flex-wrap gap-4">
+                        <button type="button" id="addBreakBtn"
+                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">
+                            + Add Break
+                        </button>
+                        <button type="submit" id="saveSessionBtn"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                            Save Session
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Session History Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-4 border-b pb-2">Session History</h2>
+                <div id="loading" class="text-center py-4 text-gray-500">Loading history...</div>
+                <div id="logsContainer" class="space-y-6">
+                    <!-- Log items will be injected here by JavaScript -->
+                </div>
+                <p id="noLogs" class="hidden text-center py-8 text-gray-500">No study sessions have been logged yet.</p>
+            </div>
+
+            <!-- Reports Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg mt-8">
+                <h2 class="text-2xl font-bold mb-4 border-b pb-2">Generate Reports</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Daily Report -->
+                    <div class="border p-4 rounded-lg bg-gray-50">
+                        <h3 class="font-semibold text-lg mb-2">Daily Report</h3>
+                        <p class="text-sm text-gray-500 mb-3">Select a date to download the report for that day.</p>
+                        <input type="date" id="dailyDate"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500">
+                        <button id="downloadDailyBtn"
+                            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                            Download Daily
+                        </button>
+                    </div>
+                    <!-- Weekly Report -->
+                    <div class="border p-4 rounded-lg bg-gray-50">
+                        <h3 class="font-semibold text-lg mb-2">Weekly Report</h3>
+                        <p class="text-sm text-gray-500 mb-3">Select a week to download the report for that week.</p>
+                        <input type="week" id="weeklyDate"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500">
+                        <button id="downloadWeeklyBtn"
+                            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                            Download Weekly
+                        </button>
+                    </div>
+                    <!-- Monthly Report -->
+                    <div class="border p-4 rounded-lg bg-gray-50">
+                        <h3 class="font-semibold text-lg mb-2">Monthly Report</h3>
+                        <p class="text-sm text-gray-500 mb-3">Select a month to download the report for that month.</p>
+                        <input type="month" id="monthlyDate"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500">
+                        <button id="downloadMonthlyBtn"
+                            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                            Download Monthly
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="alertModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50 hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center modal-fade">
+            <h3 id="alertTitle" class="text-xl font-bold mb-4 text-gray-900">Notice</h3>
+            <p id="alertMessage" class="text-gray-700 mb-6"></p>
+            <button id="alertOkBtn"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-8 rounded-lg">OK</button>
+        </div>
+    </div>
+
+    
+</body>
+<script src="script.js"></script>
+</html>
